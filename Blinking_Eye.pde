@@ -7,11 +7,16 @@ PImage eye;
   stroke(12,12,12);
   smooth();
   frameRate(30);
-  eye = loadImage("Eye_solo_small.png");
+  eye = loadImage("Eye_solo_small_png.png");
+  image (eye, 0,0);
+  eye.resize(0,150);
+  //resizing image, (w,h);
 
   stroke(0);
   ellipseMode(CENTER);
-  ellipse(width/2,height/2,190,70);
+  //ellipse(width/2,height/2,190,70);
+ 
+  //image(eye, width/2, height/2, 100,100);
 }
 
 void draw() 
@@ -41,14 +46,19 @@ void draw()
   //:Pupille
   int m = constrain (mouseX, 53, 148);
   int n = constrain (mouseY, 80, 120);
-  fill(0);
-  stroke(0);
-  ellipseMode(CENTER);
-  ellipse(m,n,20,20);
+  //fill(0);
+  //stroke(0);
+  //ellipseMode(CENTER);
+  //ellipse(m,n,20,20);
+  imageMode(CENTER);
+  image(eye, m, n);
   
   //displaying the img
-  imageMode(CENTER);
-  image(eye,0,0, 100,100);
+  //imageMode(CENTER);
+  //image(eye,mouseX,mouseY,20,20);
+  //int o = constrain (mouseX, 53, 148);
+  //int p = constrain (mouseY, 80, 120);
+  //image (eye, o, p);
 }  
 
 void keyPressed() //raises the eybrow
@@ -81,6 +91,12 @@ void mousePressed() //closes the eyelids
   stroke(0);
   rectMode(CENTER);
   rect(width/2,130,200,45);
+}
+
+void mouseReleased (){
+  fill( 255);
+  ellipseMode(CENTER);
+  ellipse(width/2, height/2, 50,50);
 }
 
 //copyright 2010 by Nick Byerly
