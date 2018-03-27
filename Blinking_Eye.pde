@@ -1,87 +1,281 @@
-PImage eye; 
+ArrayList<MovingNode> nodes;
+float maxDistance = 65;
+float dx = 30;
+float dy = 30;
+float maxNeighbors = 10;
+
+Boolean drawMode = true;
+
+//eye part
+ PImage eye; 
+ PImage eyemask;
+ PImage test;
+ PImage eyebkd;
  
- void setup() 
-{  
-  size(200,200);
-  background(0);
-  stroke(12,12,12);
-  smooth();
-  frameRate(30);
-  eye = loadImage("Eye_solo_small.png");
-
-  stroke(0);
-  ellipseMode(CENTER);
-  ellipse(width/2,height/2,190,70);
+void setup()
+{
+  size(800,800);
+  background(220);
+  nodes = new ArrayList<MovingNode>();
+  
+  //eye part
+   eyemask = loadImage("Eye_Mask_grey.png");
+   test = loadImage("Stereographic2.jpg");
+   eyebkd = loadImage("Stereo_Clouds_.jpg");
 }
 
-void draw() 
+void draw()
 {
-  background(0);
-  smooth();
-
-  frameRate(30);
+  //println(nodes.size());
   
-  //:Augenbraue
-  fill(255);
-  rectMode(CENTER);
-  rect(100,35,170,15);
+  background(220);
   
-  //:Augenhöhle/ Eye socket
-  fill(255);
-  ellipseMode(CENTER);
-  ellipse(width/2,height/2,190,70);
+  //Eye part
+  int m = constrain (mouseX, 150, 350);
+  int n = constrain (mouseY, 150,350);
   
-  //:Augapfel/ Eyeball
-  int x = constrain (mouseX, 70, 130);
-  fill(mouseX,0,mouseY);
-  strokeWeight(6);
-  ellipseMode(CENTER);
-  ellipse(x,100,70,70);
-  
-  //:Pupille
-  int m = constrain (mouseX, 53, 148);
-  int n = constrain (mouseY, 80, 120);
-  fill(0);
-  stroke(0);
-  ellipseMode(CENTER);
-  ellipse(m,n,20,20);
-  
-  //displaying the img
   imageMode(CENTER);
-  image(eye,0,0, 100,100);
-}  
+   test.resize(550,550);
+  //image(eye, m, n);
+  
+  //eye background clouds
+  image(eyebkd, 400,400);
+  eyebkd.resize(700,700);
+  
+  // Eye mask
+   image(eyemask,400,400,800,800);
+   eyemask.filter(THRESHOLD,mouseX);
+   image(eyemask,mouseX,mouseY);
+   
+  //eye closed, only when mouse is pressed
+   if (mousePressed ) {
+    fill(0);
+  //rectMode(CENTER);
+  rect(0,0,width,375);
+   rect(0,425,width,450);
+     
+  } else if (mousePressed) {
+    fill(0);
+  } 
+  rect(200,200,0,0);
+   
+  
+  if(drawMode)
+  {
+    if(mousePressed){
+      addNewNode(mouseX,mouseY,random(-dx,dx),random(-dx,dx));
+    }
+  } else
+  {
+    addNewNode(random(width),random(height),0,0);
+  }
+  
+  //for(int i=0; i<nodes.size(); i++)
+  for(int i=0; i>nodes.size(); i++)
+  {
+    MovingNode currentNode = nodes.get(i);
+    currentNode.setNumNeighbors( countNumNeighbors(currentNode,maxDistance) );
+  }
+  
+  for(int i=0; i<nodes.size(); i++)
+  {
+    MovingNode currentNode = nodes.get(i);
+   // if(currentNode.x < height || currentNode.x < 0 || currentNode.y > height || currentNode.y < 0)
+    if(currentNode.x > height || currentNode.x < 0 || currentNode.y > width || currentNode.y < 0.5)
+    {
+      nodes.remove(currentNode);
+    }
+  }
+  
+  for(int i = 0; i < nodes.size(); i++){
+    MovingNode currentNode = nodes.get(i);
+    for(int j=0; j<currentNode.neighbors.size(); j++)
+    {
+      MovingNode neighborNode = currentNode.neighbors.get(j);
+      float lineColor = currentNode.calculateLineColor(neighborNode,maxDistance);
+      stroke(lineColor, lineColor, lineColor);
+      strokeWeight(3);
+      line(currentNode.x,currentNode.y,neighborNode.x,neighborNode.y);
+    }
+    currentNode.display();
+  }
+  
+  
+  
+}
 
-void keyPressed() //raises the eybrow
+void addNewNode(float xPos, float yPos, float dx, float dy)
 {
-  frameRate(10);
-
-  fill(0);
-  rectMode(CENTER);
-  rect(100,35,170,15);
-
-  fill(255);
-  rectMode(CENTER);
-  rect(100,10,170,15);
-
-  //:gives the coordinates in the comment box
-  println (""+mouseX+"+"+mouseY+"");
+  //println("add new node");
+  //generates a random location within a 50x50px box around the mouse
+  //float xPos = mouseX + random(-50,50);
+  //float yPos = mouseY + random(-50,50);
+  //adds a node at this location
+  MovingNode node = new MovingNode(xPos+dx,yPos+dy);
+  
+  node.setNumNeighbors( countNumNeighbors(node,maxDistance) );
+  
+  //println("newly added node has " + node.numNeighbors + " neighbors");
+  //println("and neighbors.size() = " + node.neighbors.size());
+  
+  
+  if(node.numNeighbors < maxNeighbors){
+    nodes.add(node);
+    /*for(int i=0; i<nodes.size(); i++)
+    {
+      MovingNode currentNode = nodes.get(i);
+      currentNode.setNumNeighbors( countNumNeighbors(currentNode,maxDistance) );
+    }*/
+  }
+  
+  
 }
 
-
-void mousePressed() //closes the eyelids
-{ 
-  frameRate(7);
-
-  fill(0);
-  stroke(0);
-  rectMode(CENTER);
-  rect(width/2,70,200,55);
-
-  fill(0);
-  stroke(0);
-  rectMode(CENTER);
-  rect(width/2,130,200,45);
+int countNumNeighbors(MovingNode nodeA, float maxNeighborDistance)
+{
+  int numNeighbors = 0;
+  nodeA.clearNeighbors();
+  
+  for(int i = 0; i < nodes.size(); i++)
+  {
+    MovingNode nodeB = nodes.get(i);
+    float distance = sqrt((nodeA.x-nodeB.x)*(nodeA.x-nodeB.x) + (nodeA.y-nodeB.y)*(nodeA.y-nodeB.y));
+    if(distance < maxNeighborDistance)
+    {
+      numNeighbors++;
+      nodeA.addNeighbor(nodeB);
+    }
+  }
+  return numNeighbors;
 }
 
-//copyright 2010 by Nick Byerly
-//take it easy mofagel
+void keyPressed()
+{
+  drawMode = !drawMode;
+  nodes = new ArrayList<MovingNode>();
+}
+class MovingNode
+{
+  float x;
+  float y;
+  int numNeighbors;
+  ArrayList<MovingNode> neighbors;
+  float lineColor;
+  //float nodeWidth = 3;
+  float nodeWidth = 30;
+  float nodeHeight = 30;
+  //float fillColor = 50;
+  float fillColor = 2;
+  //float lineColorRange = 180;
+  float lineColorRange = 190;
+  
+  float xVel=0;
+  float yVel=0;
+  float xAccel=0;
+  float yAccel=0;
+  
+  float accelValue = 0.3;
+  //orig = 0.5
+
+  MovingNode(float xPos, float yPos)
+  {
+    x = xPos;
+    y = yPos;
+    numNeighbors = 0;
+    neighbors = new ArrayList<MovingNode>();
+  }
+  
+  void display()
+  {
+    move();
+    
+    noStroke();
+    fill(fillColor);
+    ellipse(x,y,nodeWidth,nodeHeight);
+  }
+  
+  void move()
+  {
+    xAccel = random(-accelValue,accelValue);
+    yAccel = random(-accelValue,accelValue);
+    
+    xVel += xAccel;
+    yVel += yAccel;
+    
+    x += xVel;
+    y += yVel;
+  }
+  
+  void addNeighbor(MovingNode node)
+  {
+    neighbors.add(node);
+  }
+  
+  void setNumNeighbors(int num)
+  {
+    numNeighbors = num;
+  }
+  
+  void clearNeighbors()
+  {
+    neighbors = new ArrayList<MovingNode>();
+  }
+  
+  float calculateLineColor(MovingNode neighborNode, float maxDistance)
+  {
+    float distance = sqrt((x-neighborNode.x)*(x-neighborNode.x) + (y-neighborNode.y)*(y-neighborNode.y));
+    lineColor = (distance/maxDistance)*lineColorRange;
+    return lineColor;
+  }
+    
+}
+class Node
+{
+  float x;
+  float y;
+  int numNeighbors;
+  ArrayList<Node> neighbors;
+  float lineColor;
+  float nodeWidth = 3;
+  float nodeHeight = 3;
+  float fillColor = 50;
+  float lineColorRange = 160;
+
+  Node(float xPos, float yPos)
+  {
+    x = xPos;
+    y = yPos;
+    numNeighbors = 0;
+    neighbors = new ArrayList<Node>();
+  }
+  
+  void display()
+  {
+    noStroke();
+    fill(fillColor);
+    ellipse(x,y,nodeWidth,nodeHeight);
+  }
+  
+  void addNeighbor(Node node)
+  {
+    neighbors.add(node);
+  }
+  
+  void setNumNeighbors(int num)
+  {
+    numNeighbors = num;
+  }
+  
+  void clearNeighbors()
+  {
+    neighbors = new ArrayList<Node>();
+  }
+  
+  float calculateLineColor(Node neighborNode, float maxDistance)
+  {
+    float distance = sqrt((x-neighborNode.x)*(x-neighborNode.x) + (y-neighborNode.y)*(y-neighborNode.y));
+    lineColor = (distance/maxDistance)*lineColorRange;
+    return lineColor;
+  }
+    
+}
